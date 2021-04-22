@@ -18,6 +18,7 @@ use crate::models::{AlbumList, Album, Id, SizeOffset, Directory, Track};
 use actix_web::web::Query;
 use tokio_util::io::ReaderStream;
 use crate::repo::RepoManager;
+use std::str::FromStr;
 
 #[get("/ping.view")]
 async fn ping() -> impl Responder {
@@ -95,6 +96,17 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
         .body(response::ok(quick_xml::se::to_string(&dir).unwrap()))
 }
 
+#[get("/stream.view")]
+async fn stream(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
+    let parts: Vec<_> = query.id.split("/").collect();
+    let catalog = parts[0];
+    let track_id = u8::from_str(parts[1]).unwrap();
+    let audio = data.backend.lock().unwrap().inner().as_backend().get_audio(catalog, track_id).await.unwrap();
+    HttpResponse::Ok()
+        .content_type(format!("audio/{}", audio.extension))
+        .streaming(ReaderStream::new(audio.reader))
+}
+
 struct AppState {
     backend: Mutex<SonicBackend>,
     repo: Mutex<RepoManager>,
@@ -132,6 +144,7 @@ async fn main() -> anyhow::Result<()> {
                 .service(get_album_list)
                 .service(get_cover_art)
                 .service(get_music_directory)
+                .service(stream)
             )
     })
         .bind(config.server.listen("0.0.0.0:1710"))?
