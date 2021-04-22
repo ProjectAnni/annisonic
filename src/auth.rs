@@ -16,6 +16,10 @@ struct Auth {
     token: String,
     #[serde(rename = "s")]
     salt: String,
+    #[serde(rename = "c")]
+    client: String,
+    #[serde(rename = "v")]
+    version: String,
 }
 
 pub struct SonicAuth;
@@ -62,7 +66,7 @@ impl<S, B> Service<ServiceRequest> for SonicAuthMiddleware<S>
                 let query = query.into_inner();
                 // t = md5(password+s)
                 if query.username == std::env::var("ANNI_USER").unwrap_or("anni".to_owned())
-                    && query.token == format!("{:x}", md5::compute(std::env::var("ANNI_PASSWD").unwrap_or(String::new()) + &query.salt)) {
+                    && query.token == format!("{:x}", md5::compute(std::env::var("ANNI_PASSWD").unwrap_or("anni".to_owned()) + &query.salt)) {
                     let fut = self.service.call(req);
                     Box::pin(async {
                         let res = fut.await?;
