@@ -20,6 +20,14 @@ impl Config {
 #[derive(Serialize, Deserialize)]
 pub struct ServerConfig {
     listen: Option<String>,
+    #[serde(default = "anni")]
+    pub username: String,
+    #[serde(default = "anni")]
+    pub password: String,
+}
+
+fn anni() -> String {
+    "anni".to_string()
 }
 
 impl ServerConfig {

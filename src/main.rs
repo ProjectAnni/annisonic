@@ -84,6 +84,7 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
             track: track_id,
             cover_art: query.id.clone(),
             path: format!("{}/{}", query.id, track_id),
+            suffix: "flac".to_owned(), // FIXME: file format
         });
     }
     let dir = Directory {
@@ -113,6 +114,9 @@ struct AppState {
 }
 
 async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
+    std::env::set_var("ANNI_USER", &config.server.username);
+    std::env::set_var("ANNI_PASSWD", &config.server.password);
+
     log::info!("Start initializing backends...");
     let now = std::time::SystemTime::now();
     let backend = if config.backend.backend_type == "file" {
@@ -122,9 +126,15 @@ async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
         unimplemented!();
     };
     log::info!("Backend initialization finished, used {:?}", now.elapsed().unwrap());
+
+    log::info!("Start initializing metadata repository...");
+    let now = std::time::SystemTime::now();
+    let repo = RepoManager::new(&config.repo.root);
+    log::info!("Metadata repository initialization finished, used {:?}", now.elapsed().unwrap());
+
     Ok(web::Data::new(AppState {
         backend: Mutex::new(backend),
-        repo: Mutex::new(RepoManager::new(&config.repo.root)),
+        repo: Mutex::new(repo),
     }))
 }
 

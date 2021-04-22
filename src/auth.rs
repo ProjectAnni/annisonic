@@ -65,8 +65,8 @@ impl<S, B> Service<ServiceRequest> for SonicAuthMiddleware<S>
             Ok(query) => {
                 let query = query.into_inner();
                 // t = md5(password+s)
-                if query.username == std::env::var("ANNI_USER").unwrap_or("anni".to_owned())
-                    && query.token == format!("{:x}", md5::compute(std::env::var("ANNI_PASSWD").unwrap_or("anni".to_owned()) + &query.salt)) {
+                if query.username == std::env::var("ANNI_USER").unwrap()
+                    && query.token == format!("{:x}", md5::compute(std::env::var("ANNI_PASSWD").unwrap() + &query.salt)) {
                     let fut = self.service.call(req);
                     Box::pin(async {
                         let res = fut.await?;

@@ -80,6 +80,7 @@ pub struct Track {
     pub track: usize,
     pub cover_art: String,
     pub path: String,
+    pub suffix: String,
 }
 
 #[cfg(test)]
