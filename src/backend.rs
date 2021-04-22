@@ -15,10 +15,6 @@ impl SonicBackend {
         })
     }
 
-    pub fn has_album(&self, catalog: &str) -> bool {
-        self.albums.contains(catalog)
-    }
-
     pub fn albums(&self) -> HashSet<&str> {
         self.albums.iter().map(|a| a.as_str()).collect()
     }

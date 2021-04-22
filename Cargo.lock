@@ -231,7 +231,7 @@ dependencies = [
 [[package]]
 name = "anni-backend"
 version = "0.1.0"
-source = "git+https://github.com/project-anni/anni#bbce73c96a52309a245a83855d7d91ae7a93cf79"
+source = "git+https://github.com/project-anni/anni#735530653a6cb96fc429ce0e49116fa1167656b2"
 dependencies = [
  "anni-repo",
  "async-trait",
@@ -243,7 +243,7 @@ dependencies = [
 [[package]]
 name = "anni-common"
 version = "0.1.0"
-source = "git+https://github.com/project-anni/anni#bbce73c96a52309a245a83855d7d91ae7a93cf79"
+source = "git+https://github.com/project-anni/anni#735530653a6cb96fc429ce0e49116fa1167656b2"
 dependencies = [
  "anyhow",
 ]
@@ -251,7 +251,7 @@ dependencies = [
 [[package]]
 name = "anni-derive"
 version = "0.1.0"
-source = "git+https://github.com/project-anni/anni#bbce73c96a52309a245a83855d7d91ae7a93cf79"
+source = "git+https://github.com/project-anni/anni#735530653a6cb96fc429ce0e49116fa1167656b2"
 dependencies = [
  "quote",
  "syn",
@@ -260,7 +260,7 @@ dependencies = [
 [[package]]
 name = "anni-repo"
 version = "0.1.0"
-source = "git+https://github.com/project-anni/anni#bbce73c96a52309a245a83855d7d91ae7a93cf79"
+source = "git+https://github.com/project-anni/anni#735530653a6cb96fc429ce0e49116fa1167656b2"
 dependencies = [
  "anni-common",
  "anni-derive",
@@ -280,6 +280,7 @@ dependencies = [
  "actix-utils",
  "actix-web",
  "anni-backend",
+ "anni-repo",
  "anyhow",
  "env_logger",
  "log",

@@ -5,6 +5,7 @@ use std::fs;
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub server: ServerConfig,
+    pub repo: RepoConfig,
     pub backend: BackendConfig,
 }
 
@@ -29,6 +30,13 @@ impl ServerConfig {
             default
         }
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct RepoConfig {
+    #[serde(rename = "type")]
+    repo_type: String,
+    pub root: String,
 }
 
 #[derive(Serialize, Deserialize)]

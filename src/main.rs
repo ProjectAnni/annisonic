@@ -3,6 +3,7 @@ mod auth;
 mod models;
 mod backend;
 mod config;
+mod repo;
 
 use actix_web::{HttpServer, Responder, HttpResponse, get, App, web};
 use actix_web::middleware::Logger;
@@ -16,6 +17,7 @@ use std::path::PathBuf;
 use crate::models::{AlbumList, Album, Id, SizeOffset};
 use actix_web::web::Query;
 use tokio_util::io::ReaderStream;
+use crate::repo::RepoManager;
 
 #[get("/ping.view")]
 async fn ping() -> impl Responder {
@@ -34,9 +36,18 @@ async fn get_license() -> impl Responder {
 #[get("/getAlbumList.view")]
 async fn get_album_list(query: Query<SizeOffset>, data: web::Data<AppState>) -> impl Responder {
     let mut albums = AlbumList::new();
-    let data = data.backend.lock().unwrap();
-    for album in data.albums().iter().skip(query.offset) {
-        albums.push(Album::new(album.to_string(), album.to_string(), album.to_string()));
+    let backend = data.backend.lock().unwrap();
+    let repo = data.repo.lock().unwrap();
+    for catalog in backend.albums().iter().skip(query.offset) {
+        match repo.load_album(catalog) {
+            Some(album) =>
+                albums.push(Album::new(
+                    catalog.to_string(),
+                    album.title().to_owned(),
+                    album.artist().to_owned(),
+                )),
+            None => {}
+        }
         if albums.inner.len() >= query.size {
             break;
         }
@@ -56,11 +67,15 @@ async fn get_cover_art(query: Query<Id>, data: web::Data<AppState>) -> impl Resp
 
 #[get("getMusicDirectory.view")]
 async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
-    unimplemented!()
+    unimplemented!();
+    HttpResponse::Ok()
+        .content_type("application/xml")
+        .body(response::ok(String::new()))
 }
 
 struct AppState {
     backend: Mutex<SonicBackend>,
+    repo: Mutex<RepoManager>,
 }
 
 async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
@@ -75,6 +90,7 @@ async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
     log::info!("Backend initialization finished, used {:?}", now.elapsed().unwrap());
     Ok(web::Data::new(AppState {
         backend: Mutex::new(backend),
+        repo: Mutex::new(RepoManager::new(&config.repo.root)),
     }))
 }
 
