@@ -14,7 +14,7 @@ use anni_backend::backends::FileBackend;
 use crate::backend::SonicBackend;
 use crate::config::Config;
 use std::path::PathBuf;
-use crate::models::{AlbumList, Album, Id, SizeOffset};
+use crate::models::{AlbumList, Album, Id, SizeOffset, Directory, Track};
 use actix_web::web::Query;
 use tokio_util::io::ReaderStream;
 use crate::repo::RepoManager;
@@ -67,10 +67,32 @@ async fn get_cover_art(query: Query<Id>, data: web::Data<AppState>) -> impl Resp
 
 #[get("getMusicDirectory.view")]
 async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
-    unimplemented!();
+    let repo = data.repo.lock().unwrap();
+    let album = repo.load_album(&query.id).unwrap();
+    let mut tracks = Vec::new();
+    for (track_id, track) in album.discs()[0].tracks().iter().enumerate() {
+        let track_id = track_id + 1;
+        tracks.push(Track {
+            id: format!("{}/{}", query.id, track_id),
+            parent: query.id.clone(),
+            is_dir: false,
+
+            album: album.title().to_owned(),
+            title: track.title().to_owned(),
+            artist: album.artist().to_owned(), // FIXME: use track artist
+            track: track_id,
+            cover_art: query.id.clone(),
+            path: format!("{}/{}", query.id, track_id),
+        });
+    }
+    let dir = Directory {
+        id: query.id.clone(),
+        name: album.title().to_owned(),
+        inner: tracks,
+    };
     HttpResponse::Ok()
         .content_type("application/xml")
-        .body(response::ok(String::new()))
+        .body(response::ok(quick_xml::se::to_string(&dir).unwrap()))
 }
 
 struct AppState {

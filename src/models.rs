@@ -58,6 +58,30 @@ impl AlbumList {
     }
 }
 
+#[derive(Serialize)]
+#[serde(rename = "directory")]
+pub struct Directory {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "child")]
+    pub inner: Vec<Track>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Track {
+    pub id: String,
+    pub parent: String,
+    pub is_dir: bool,
+
+    pub album: String,
+    pub title: String,
+    pub artist: String,
+    pub track: usize,
+    pub cover_art: String,
+    pub path: String,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::models::{Album, AlbumList};
