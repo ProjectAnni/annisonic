@@ -12,6 +12,8 @@ use serde::Deserialize;
 struct Auth {
     #[serde(rename = "u")]
     username: String,
+    #[serde(rename = "p")]
+    password: Option<String>,
     #[serde(rename = "t")]
     token: String,
     #[serde(rename = "s")]
@@ -66,7 +68,13 @@ impl<S, B> Service<ServiceRequest> for SonicAuthMiddleware<S>
                 let query = query.into_inner();
                 // t = md5(password+s)
                 if query.username == std::env::var("ANNI_USER").unwrap()
-                    && query.token == format!("{:x}", md5::compute(std::env::var("ANNI_PASSWD").unwrap() + &query.salt)) {
+                    && match query.password {
+                    None => { query.token == format!("{:x}", md5::compute(std::env::var("ANNI_PASSWD").unwrap() + &query.salt)) }
+                    Some(password) => {
+                        let password = if password.starts_with("enc:") { &password[3..] } else { &password };
+                        password == std::env::var("ANNI_PASSWD_HEX").unwrap()
+                    }
+                } {
                     let fut = self.service.call(req);
                     Box::pin(async {
                         let res = fut.await?;

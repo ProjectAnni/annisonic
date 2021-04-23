@@ -114,6 +114,7 @@ struct AppState {
 async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
     std::env::set_var("ANNI_USER", &config.server.username);
     std::env::set_var("ANNI_PASSWD", &config.server.password);
+    std::env::set_var("ANNI_PASSWD_HEX", hex::encode(&config.server.password));
 
     log::info!("Start initializing backends...");
     let now = std::time::SystemTime::now();
