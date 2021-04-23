@@ -112,6 +112,20 @@ pub struct IndexArtist {
     pub name: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename = "randomSongs")]
+pub struct RandomSongs {
+    #[serde(rename = "song")]
+    pub inner: Vec<Track>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RandomSongsQuery {
+    #[serde(default = "ten")]
+    pub size: usize,
+    pub music_folder_id: Option<String>,
+}
 
 #[cfg(test)]
 mod tests {

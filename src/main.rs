@@ -13,12 +13,13 @@ use anni_backend::backends::FileBackend;
 use crate::backend::SonicBackend;
 use crate::config::Config;
 use std::path::PathBuf;
-use crate::models::{AlbumList, Album, Id, SizeOffset, AlbumDirectory, Track, MusicDirectory, Index, IndexArtist};
+use crate::models::*;
 use actix_web::web::Query;
 use tokio_util::io::ReaderStream;
 use crate::repo::RepoManager;
 use std::str::FromStr;
 use std::time::UNIX_EPOCH;
+use rand::Rng;
 
 #[get("/ping.view")]
 async fn ping() -> impl Responder {
@@ -138,7 +139,7 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
                 artist: track.artist().to_owned(),
                 track: track_id,
                 cover_art: query.id.clone(),
-                path: format!("{}/{}", query.id, track_id),
+                path: format!("[{}] {}/{}", query.id, album.title(), track_id), // FIXME: path
                 suffix: "flac".to_owned(), // FIXME: file format
             });
         }
@@ -153,6 +154,50 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
     HttpResponse::Ok()
         .content_type("application/xml")
         .body(response::ok(body))
+}
+
+#[get("/getRandomSongs.view")]
+async fn get_random_songs(query: Query<RandomSongsQuery>, data: web::Data<AppState>) -> impl Responder {
+    let mut rng = rand::thread_rng();
+    let mut songs = Vec::new();
+    let mut tries = 0;
+    let albums = data.backend.albums();
+    while songs.len() < query.size && tries < 2 * query.size {
+        tries += 1;
+        let pos = rng.gen_range(0..data.backend.albums().len());
+        match albums.iter().nth(pos) {
+            Some(catalog) => {
+                match data.repo.load_album(catalog) {
+                    Some(album) => {
+                        let tracks = album.discs()[0].tracks();
+                        let track_id = rng.gen_range(0..tracks.len());
+                        let track = &tracks[track_id];
+                        let track_id = track_id + 1;
+                        songs.push(Track {
+                            id: format!("{}/{}", catalog, track_id),
+                            parent: catalog.to_string(),
+                            is_dir: false,
+
+                            album: album.title().to_owned(),
+                            title: track.title().to_owned(),
+                            artist: track.artist().to_owned(),
+                            track: track_id,
+                            cover_art: catalog.to_string(),
+                            path: format!("[{}] {}/{}", catalog, album.title(), track_id),
+                            suffix: "flac".to_owned(), // FIXME: file format
+                        });
+                    }
+                    None => {}
+                }
+            }
+            None => {}
+        }
+    }
+    let songs = RandomSongs { inner: songs };
+
+    HttpResponse::Ok()
+        .content_type("application/xml")
+        .body(response::ok(quick_xml::se::to_string(&songs).unwrap()))
 }
 
 #[get("/getUser.view")]
@@ -222,6 +267,7 @@ async fn main() -> anyhow::Result<()> {
                 .service(get_music_folders)
                 .service(get_indexes)
                 .service(get_music_directory)
+                .service(get_random_songs)
                 .service(get_cover_art)
                 .service(get_playlists) // needed by SoundWaves
                 .service(stream)

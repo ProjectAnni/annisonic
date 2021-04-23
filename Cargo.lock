@@ -286,6 +286,7 @@ dependencies = [
  "log",
  "md5",
  "quick-xml",
+ "rand",
  "serde",
  "tokio-util",
  "toml",
