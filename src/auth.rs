@@ -1,12 +1,12 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use actix_service::{Service, Transform};
 use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error};
 use actix_utils::future::{ok, Ready};
 use std::future::Future;
 use actix_web::web::Query;
 use serde::Deserialize;
+use actix_web::dev::{Transform, Service};
 
 #[derive(Debug, Deserialize)]
 struct Auth {

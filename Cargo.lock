@@ -276,7 +276,6 @@ dependencies = [
 name = "annisonic"
 version = "0.1.0"
 dependencies = [
- "actix-service",
  "actix-utils",
  "actix-web",
  "anni-backend",
