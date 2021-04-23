@@ -162,7 +162,7 @@ async fn get_random_songs(query: Query<RandomSongsQuery>, data: web::Data<AppSta
     let mut songs = Vec::new();
     let mut tries = 0;
     let albums = data.backend.albums();
-    while songs.len() < query.size && tries < 2 * query.size {
+    while songs.len() < query.size && tries < 5 * query.size {
         tries += 1;
         let pos = rng.gen_range(0..data.backend.albums().len());
         match albums.iter().nth(pos) {
@@ -171,21 +171,27 @@ async fn get_random_songs(query: Query<RandomSongsQuery>, data: web::Data<AppSta
                     Some(album) => {
                         let tracks = album.discs()[0].tracks();
                         let track_id = rng.gen_range(0..tracks.len());
-                        let track = &tracks[track_id];
+                        let ref track = tracks[track_id];
                         let track_id = track_id + 1;
-                        songs.push(Track {
-                            id: format!("{}/{}", catalog, track_id),
-                            parent: catalog.to_string(),
-                            is_dir: false,
+                        use anni_repo::album::TrackType;
+                        match track.track_type() {
+                            TrackType::Normal | TrackType::Absolute => {
+                                songs.push(Track {
+                                    id: format!("{}/{}", catalog, track_id),
+                                    parent: catalog.to_string(),
+                                    is_dir: false,
 
-                            album: album.title().to_owned(),
-                            title: track.title().to_owned(),
-                            artist: track.artist().to_owned(),
-                            track: track_id,
-                            cover_art: catalog.to_string(),
-                            path: format!("[{}] {}/{}", catalog, album.title(), track_id),
-                            suffix: "flac".to_owned(), // FIXME: file format
-                        });
+                                    album: album.title().to_owned(),
+                                    title: track.title().to_owned(),
+                                    artist: track.artist().to_owned(),
+                                    track: track_id,
+                                    cover_art: catalog.to_string(),
+                                    path: format!("[{}] {}/{}", catalog, album.title(), track_id),
+                                    suffix: "flac".to_owned(), // FIXME: file format
+                                });
+                            }
+                            _ => {}
+                        }
                     }
                     None => {}
                 }
