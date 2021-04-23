@@ -61,6 +61,7 @@ async fn stream(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
     let audio = data.backend.inner().as_backend().get_audio(catalog, track_id).await.unwrap();
     HttpResponse::Ok()
         .content_type(format!("audio/{}", audio.extension))
+        .insert_header(("Content-Length", audio.size))
         .streaming(ReaderStream::new(audio.reader))
 }
 
@@ -105,7 +106,6 @@ async fn get_indexes(data: web::Data<AppState>) -> impl Responder {
         .body(response::ok(format!(r#"<indexes lastModified="{:?}" ignoredArticles="The El La Los Las Le Les">{}</indexes>"#,
                                    std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(), indexes)))
 }
-
 
 #[get("getMusicDirectory.view")]
 async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
