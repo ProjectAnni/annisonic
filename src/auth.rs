@@ -14,13 +14,13 @@ struct Auth {
     username: String,
     #[serde(rename = "p")]
     password: Option<String>,
-    #[serde(rename = "t")]
+    #[serde(rename = "t", default)]
     token: String,
-    #[serde(rename = "s")]
+    #[serde(rename = "s", default)]
     salt: String,
-    #[serde(rename = "c")]
+    #[serde(rename = "c", default)]
     client: String,
-    #[serde(rename = "v")]
+    #[serde(rename = "v", default)]
     version: String,
 }
 
@@ -71,7 +71,7 @@ impl<S, B> Service<ServiceRequest> for SonicAuthMiddleware<S>
                     && match query.password {
                     None => { query.token == format!("{:x}", md5::compute(std::env::var("ANNI_PASSWD").unwrap() + &query.salt)) }
                     Some(password) => {
-                        let password = if password.starts_with("enc:") { &password[3..] } else { &password };
+                        let password = if password.starts_with("enc:") { &password[4..] } else { &password };
                         password == std::env::var("ANNI_PASSWD_HEX").unwrap()
                     }
                 } {
