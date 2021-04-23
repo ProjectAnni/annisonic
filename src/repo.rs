@@ -23,8 +23,8 @@ impl RepoManager {
             } else {
                 for disc in album.discs() {
                     let mut disc_album = Album::new(
-                        disc.title().unwrap_or(album.title()),
-                        disc.artist().unwrap_or(album.artist()),
+                        disc.title(),
+                        disc.artist(),
                         album.release_date().clone(),
                         disc.catalog(),
                     );

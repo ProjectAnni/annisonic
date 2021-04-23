@@ -78,7 +78,7 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
 
             album: album.title().to_owned(),
             title: track.title().to_owned(),
-            artist: album.artist().to_owned(), // FIXME: use track artist
+            artist: track.artist().to_owned(),
             track: track_id,
             cover_art: query.id.clone(),
             path: format!("{}/{}", query.id, track_id),
