@@ -9,7 +9,6 @@ use actix_web::{HttpServer, Responder, HttpResponse, get, App, web};
 use actix_web::middleware::Logger;
 use crate::auth::SonicAuth;
 use anni_backend::AnniBackend;
-use std::sync::Mutex;
 use anni_backend::backends::FileBackend;
 use crate::backend::SonicBackend;
 use crate::config::Config;
@@ -37,8 +36,8 @@ async fn get_license() -> impl Responder {
 #[get("/getAlbumList.view")]
 async fn get_album_list(query: Query<SizeOffset>, data: web::Data<AppState>) -> impl Responder {
     let mut albums = AlbumList::new();
-    let backend = data.backend.lock().unwrap();
-    let repo = data.repo.lock().unwrap();
+    let backend = &data.backend;
+    let repo = &data.repo;
     for catalog in backend.albums().iter().skip(query.offset) {
         match repo.load_album(catalog) {
             Some(album) =>
@@ -60,7 +59,7 @@ async fn get_album_list(query: Query<SizeOffset>, data: web::Data<AppState>) -> 
 
 #[get("/getCoverArt.view")]
 async fn get_cover_art(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
-    let cover = data.backend.lock().unwrap().inner().as_backend().get_cover(&query.id).await.unwrap();
+    let cover = data.backend.inner().as_backend().get_cover(&query.id).await.unwrap();
     HttpResponse::Ok()
         .content_type("image/jpeg")
         .streaming(ReaderStream::new(cover))
@@ -68,8 +67,7 @@ async fn get_cover_art(query: Query<Id>, data: web::Data<AppState>) -> impl Resp
 
 #[get("getMusicDirectory.view")]
 async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
-    let repo = data.repo.lock().unwrap();
-    let album = repo.load_album(&query.id).unwrap();
+    let album = data.repo.load_album(&query.id).unwrap();
     let mut tracks = Vec::new();
     for (track_id, track) in album.discs()[0].tracks().iter().enumerate() {
         let track_id = track_id + 1;
@@ -102,15 +100,15 @@ async fn stream(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
     let parts: Vec<_> = query.id.split("/").collect();
     let catalog = parts[0];
     let track_id = u8::from_str(parts[1]).unwrap();
-    let audio = data.backend.lock().unwrap().inner().as_backend().get_audio(catalog, track_id).await.unwrap();
+    let audio = data.backend.inner().as_backend().get_audio(catalog, track_id).await.unwrap();
     HttpResponse::Ok()
         .content_type(format!("audio/{}", audio.extension))
         .streaming(ReaderStream::new(audio.reader))
 }
 
 struct AppState {
-    backend: Mutex<SonicBackend>,
-    repo: Mutex<RepoManager>,
+    backend: SonicBackend,
+    repo: RepoManager,
 }
 
 async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
@@ -133,8 +131,8 @@ async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
     log::info!("Metadata repository initialization finished, used {:?}", now.elapsed().unwrap());
 
     Ok(web::Data::new(AppState {
-        backend: Mutex::new(backend),
-        repo: Mutex::new(repo),
+        backend,
+        repo,
     }))
 }
 
