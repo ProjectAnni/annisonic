@@ -21,6 +21,7 @@ fn ten() -> usize {
 #[serde(rename_all = "camelCase", rename = "album")]
 pub struct Album {
     pub id: String,
+    parent: String,
     pub title: String,
     pub artist: String,
     pub is_dir: bool,
@@ -31,11 +32,16 @@ impl Album {
     pub fn new(catalog: String, title: String, artist: String) -> Self {
         Self {
             id: catalog.clone(),
+            parent: "@".to_string(),
             title,
             artist,
             is_dir: true,
             cover_art: catalog,
         }
+    }
+
+    pub fn from_album(album: &anni_repo::Album) -> Self {
+        Self::new(album.catalog().to_owned(), album.title().to_owned(), album.artist().to_owned())
     }
 }
 
@@ -60,7 +66,7 @@ impl AlbumList {
 
 #[derive(Serialize)]
 #[serde(rename = "directory")]
-pub struct Directory {
+pub struct AlbumDirectory {
     pub id: String,
     pub name: String,
     #[serde(rename = "child")]
@@ -82,6 +88,30 @@ pub struct Track {
     pub path: String,
     pub suffix: String,
 }
+
+#[derive(Serialize)]
+#[serde(rename = "directory")]
+pub struct MusicDirectory {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "child")]
+    pub inner: Vec<Album>,
+}
+
+#[derive(Serialize)]
+#[serde(rename = "index")]
+pub struct Index {
+    pub name: String,
+    #[serde(rename = "artist")]
+    pub inner: Vec<IndexArtist>,
+}
+
+#[derive(Serialize)]
+pub struct IndexArtist {
+    pub id: String,
+    pub name: String,
+}
+
 
 #[cfg(test)]
 mod tests {
