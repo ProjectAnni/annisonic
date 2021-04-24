@@ -57,21 +57,33 @@ async fn get_album_list(query: Query<SizeOffset>, data: web::Data<AppState>) -> 
 #[get("/stream.view")]
 async fn stream(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
     let parts: Vec<_> = query.id.split("/").collect();
-    let catalog = parts[0];
-    let track_id = u8::from_str(parts[1]).unwrap();
-    let audio = data.backend.inner().as_backend().get_audio(catalog, track_id).await.unwrap();
-    HttpResponse::Ok()
-        .content_type(format!("audio/{}", audio.extension))
-        .insert_header(("Content-Length", audio.size))
-        .streaming(ReaderStream::new(audio.reader))
+    if parts.len() != 2 {
+        log::error!("Invalid stream id: {}", query.id);
+        HttpResponse::InternalServerError().finish()
+    } else {
+        let catalog = parts[0];
+        let track_id = u8::from_str(parts[1]).unwrap();
+        let audio = data.backend.inner().as_backend().get_audio(catalog, track_id).await.unwrap();
+        HttpResponse::Ok()
+            .content_type(format!("audio/{}", audio.extension))
+            .insert_header(("Content-Length", audio.size))
+            .streaming(ReaderStream::new(audio.reader))
+    }
 }
 
 #[get("/getCoverArt.view")]
 async fn get_cover_art(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
-    let cover = data.backend.inner().as_backend().get_cover(&query.id).await.unwrap();
-    HttpResponse::Ok()
-        .content_type("image/jpeg")
-        .streaming(ReaderStream::new(cover))
+    match data.backend.inner().as_backend().get_cover(&query.id).await {
+        Ok(cover) => {
+            HttpResponse::Ok()
+                .content_type("image/jpeg")
+                .streaming(ReaderStream::new(cover))
+        }
+        Err(err) => {
+            log::error!("getCoverArt {}: {}", query.id, err);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
 }
 
 #[get("/getMusicFolders.view")]
