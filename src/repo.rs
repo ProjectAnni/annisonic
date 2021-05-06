@@ -21,12 +21,12 @@ impl RepoManager {
             if album.discs().len() == 1 {
                 albums.insert(album.catalog().to_owned(), album);
             } else {
-                for disc in album.discs() {
+                for (i, disc) in album.discs().iter().enumerate() {
                     let mut disc_album = Album::new(
-                        disc.title(),
-                        disc.artist(),
+                        format!("{} [Disc {}]", disc.title(), i + 1),
+                        disc.artist().to_owned(),
                         album.release_date().clone(),
-                        disc.catalog(),
+                        disc.catalog().to_owned(),
                     );
                     disc_album.add_disc(disc.to_owned());
                     discs.insert(disc.catalog().to_owned(), disc_album);

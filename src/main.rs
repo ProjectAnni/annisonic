@@ -8,7 +8,7 @@ mod repo;
 use actix_web::{HttpServer, Responder, HttpResponse, get, App, web, http};
 use actix_web::middleware::{Logger, ErrorHandlers};
 use crate::auth::SonicAuth;
-use anni_backend::AnniBackend;
+use anni_backend::{AnniBackend, Backend};
 use anni_backend::backends::FileBackend;
 use crate::backend::SonicBackend;
 use crate::config::Config;
