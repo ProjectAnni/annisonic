@@ -1,4 +1,4 @@
-use anni_backend::{BackendError, AnniBackend, Backend};
+use anni_backend::{BackendError, AnniBackend};
 use std::collections::BTreeSet;
 
 pub struct SonicBackend {
