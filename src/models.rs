@@ -29,10 +29,10 @@ pub struct Album {
 }
 
 impl Album {
-    pub fn new(catalog: String, title: String, artist: String) -> Self {
+    pub fn new(catalog: String, title: String, artist: String, parent: String) -> Self {
         Self {
             id: catalog.clone(),
-            parent: "@".to_string(),
+            parent,
             title,
             artist,
             is_dir: true,
@@ -40,8 +40,8 @@ impl Album {
         }
     }
 
-    pub fn from_album(album: &anni_repo::Album) -> Self {
-        Self::new(album.catalog().to_owned(), album.title().to_owned(), album.artist().to_owned())
+    pub fn from_album(album: &anni_repo::Album, parent: String) -> Self {
+        Self::new(album.catalog().to_owned(), album.title().to_owned(), album.artist().to_owned(), parent)
     }
 }
 

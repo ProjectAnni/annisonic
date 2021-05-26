@@ -42,7 +42,7 @@ async fn get_album_list(query: Query<SizeOffset>, data: web::Data<AppState>) -> 
     let repo = &data.repo;
     for catalog in backend.albums().iter().skip(query.offset) {
         match repo.load_album(catalog) {
-            Some(album) => albums.push(Album::from_album(album)),
+            Some(album) => albums.push(Album::from_album(album, "@".to_string())),
             None => {}
         }
         if albums.inner.len() >= query.size {
@@ -134,7 +134,7 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
             (Some(category), None) => {
                 albums.push(Album {
                     id: format!("/{}/", category.info().name()),
-                    parent: format!("/{}", category.info().name()),
+                    parent: query.id.to_string(),
                     title: "All Albums".to_string(),
                     artist: "".to_string(),
                     is_dir: true,
@@ -144,7 +144,7 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
                 for (i, subcategory) in category.subcategories().enumerate() {
                     albums.push(Album {
                         id: format!("/{}/{}", category.info().name(), i),
-                        parent: format!("/{}", category.info().name()),
+                        parent: query.id.to_string(),
                         title: subcategory.name().to_string(),
                         artist: "".to_string(),
                         is_dir: true,
@@ -154,14 +154,22 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
                 category.info().name().to_string()
             }
             (Some(category), Some(subcategory)) => {
-                let subcategory = category.subcategories().nth(usize::from_str(subcategory).unwrap()).unwrap();
-                for catalog in subcategory.albums() {
-                    match &data.repo.load_album(catalog) {
-                        Some(album) => albums.push(Album::from_album(album)),
+                let (name, catalogs): (_, Box<dyn Iterator<Item=&str>>) = if subcategory.is_empty() {
+                    // root category
+                    (category.info().name().to_string(), Box::new(category.info().albums()))
+                } else {
+                    // sub category
+                    let subcategory = category.subcategories().nth(usize::from_str(subcategory).unwrap()).unwrap();
+                    (subcategory.name().to_string(), Box::new(subcategory.albums()))
+                };
+
+                for catalog in catalogs {
+                    match data.repo.load_album(catalog) {
+                        Some(album) => albums.push(Album::from_album(album, query.id.to_string())),
                         None => {}
                     }
                 }
-                subcategory.name().to_string()
+                name
             }
             (None, _) => {
                 // error, category does not exist
