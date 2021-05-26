@@ -7,6 +7,8 @@ pub struct RepoManager {
     manager: RepositoryManager,
     albums: HashMap<String, Album>,
     discs: HashMap<String, Album>,
+    /// one album catalog -> multi disc catalog map
+    multi_map: HashMap<String, Vec<String>>,
     categories: HashMap<String, Category>,
 }
 
@@ -16,14 +18,18 @@ impl RepoManager {
 
         let mut albums = HashMap::new();
         let mut discs = HashMap::new();
+        let mut multi_map = HashMap::new();
         for catalog in manager.catalogs().unwrap() {
             let album = manager.load_album(&catalog).unwrap();
             if album.discs().len() == 1 {
                 albums.insert(album.catalog().to_string(), album);
             } else {
+                let album_catalog = album.catalog().to_string();
                 let release_date = album.release_date().clone();
+                let mut disc_catalogs = Vec::new();
                 for (i, disc) in album.into_discs().into_iter().enumerate() {
                     let title = disc.title().to_string();
+                    disc_catalogs.push(disc.catalog().to_string());
                     discs.insert(
                         disc.catalog().to_string(),
                         disc.into_album(
@@ -32,6 +38,7 @@ impl RepoManager {
                         ),
                     );
                 }
+                multi_map.insert(album_catalog, disc_catalogs);
             }
         }
 
@@ -40,11 +47,19 @@ impl RepoManager {
             let item = manager.load_category(&category).unwrap();
             categories.insert(category, item);
         }
-        Self { manager, albums, discs, categories }
+        Self { manager, albums, discs, multi_map, categories }
     }
 
     pub fn load_album(&self, catalog: &str) -> Option<&Album> {
         self.discs.get(catalog).map(|a| Some(a)).unwrap_or(self.albums.get(catalog))
+    }
+
+    pub fn load_albums(&self, catalog: &str) -> Vec<&Album> {
+        if self.multi_map.contains_key(catalog) {
+            self.multi_map[catalog].iter().filter_map(|c| self.load_album(c)).collect()
+        } else {
+            self.load_album(catalog).map(|a| vec![a]).unwrap_or_default()
+        }
     }
 
     pub fn load_category(&self, category: &str) -> Option<&Category> {

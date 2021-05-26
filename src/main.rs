@@ -164,9 +164,8 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
                 };
 
                 for catalog in catalogs {
-                    match data.repo.load_album(catalog) {
-                        Some(album) => albums.push(Album::from_album(album, query.id.to_string())),
-                        None => {}
+                    for album in data.repo.load_albums(catalog) {
+                        albums.push(Album::from_album(album, query.id.to_string()));
                     }
                 }
                 name
