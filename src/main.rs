@@ -80,7 +80,7 @@ async fn get_cover_art(query: Query<Id>, data: web::Data<AppState>) -> impl Resp
                 .streaming(ReaderStream::new(cover))
         }
         Err(err) => {
-            log::error!("getCoverArt {}: {}", query.id, err);
+            log::error!("getCoverArt {}: {:?}", query.id, err);
             HttpResponse::InternalServerError().finish()
         }
     }
@@ -95,18 +95,13 @@ async fn get_music_folders() -> impl Responder {
 </musicFolders>"#.to_owned()))
 }
 
+/// GetIndexes returns all categories
 #[get("/getIndexes.view")]
 async fn get_indexes(data: web::Data<AppState>) -> impl Responder {
     let indexes = {
         let mut indexes = Vec::new();
-        for catalog in &data.backend.albums() {
-            match &data.repo.load_album(catalog) {
-                Some(album) => indexes.push(IndexArtist {
-                    id: catalog.to_string(),
-                    name: album.title().to_owned(),
-                }),
-                None => {}
-            }
+        for (name, category) in data.repo.categories() {
+            indexes.push(IndexArtist { id: format!("/{}", name), name: category.info().name().to_string() });
         }
         let dir = Index {
             name: "Anni".to_owned(),
@@ -120,23 +115,67 @@ async fn get_indexes(data: web::Data<AppState>) -> impl Responder {
                                    std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(), indexes)))
 }
 
+/// Music diretory id format
+/// `/{category_name}`: Get all sub categories
+/// `/{category_name}/`: Get all albums in category
+/// `/{category_name}/{subcategory_id}`: Get all albums in subcategory
+/// `{catalog}`: Get all tracks in album
 #[get("getMusicDirectory.view")]
 async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
-    let body = if query.id == "@" {
+    let body = if query.id.starts_with("/") {
+        let category = &query.id[1..];
+        let split: Vec<_> = category.split('/').collect();
+        let category = data.repo.load_category(split[0]);
+        let subcategory = split.get(1);
+
         let mut albums = Vec::new();
-        for catalog in &data.backend.albums() {
-            match &data.repo.load_album(catalog) {
-                Some(album) => albums.push(Album::from_album(album)),
-                None => {}
+        let name = match (category, subcategory) {
+            // category root, return [All Albums] and subcategories
+            (Some(category), None) => {
+                albums.push(Album {
+                    id: format!("/{}/", category.info().name()),
+                    parent: format!("/{}", category.info().name()),
+                    title: "All Albums".to_string(),
+                    artist: "".to_string(),
+                    is_dir: true,
+                    cover_art: "".to_string(),
+                });
+
+                for (i, subcategory) in category.subcategories().enumerate() {
+                    albums.push(Album {
+                        id: format!("/{}/{}", category.info().name(), i),
+                        parent: format!("/{}", category.info().name()),
+                        title: subcategory.name().to_string(),
+                        artist: "".to_string(),
+                        is_dir: true,
+                        cover_art: "".to_string(),
+                    });
+                }
+                category.info().name().to_string()
             }
-        }
+            (Some(category), Some(subcategory)) => {
+                let subcategory = category.subcategories().nth(usize::from_str(subcategory).unwrap()).unwrap();
+                for catalog in subcategory.albums() {
+                    match &data.repo.load_album(catalog) {
+                        Some(album) => albums.push(Album::from_album(album)),
+                        None => {}
+                    }
+                }
+                subcategory.name().to_string()
+            }
+            (None, _) => {
+                // error, category does not exist
+                unreachable!()
+            }
+        };
         let dir = MusicDirectory {
             id: query.id.clone(),
-            name: "Anni".to_owned(),
+            name,
             inner: albums,
         };
         quick_xml::se::to_string(&dir).unwrap()
     } else {
+        // load tracks
         let album = data.repo.load_album(&query.id).unwrap();
         let mut tracks = Vec::new();
         for (track_id, track) in album.discs()[0].tracks().iter().enumerate() {

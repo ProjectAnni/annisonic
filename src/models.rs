@@ -21,7 +21,7 @@ fn ten() -> usize {
 #[serde(rename_all = "camelCase", rename = "album")]
 pub struct Album {
     pub id: String,
-    parent: String,
+    pub parent: String,
     pub title: String,
     pub artist: String,
     pub is_dir: bool,
