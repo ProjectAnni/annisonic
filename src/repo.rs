@@ -44,8 +44,8 @@ impl RepoManager {
 
         let mut categories = HashMap::new();
         for category in manager.categories().unwrap() {
-            let item = manager.load_category(&category).unwrap();
-            categories.insert(category, item);
+            let category = manager.load_category(&category).unwrap();
+            categories.insert(category.info().name().to_string(), category);
         }
         Self { manager, albums, discs, multi_map, categories }
     }
