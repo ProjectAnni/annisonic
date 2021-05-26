@@ -130,12 +130,12 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
 
         let mut albums = Vec::new();
         let name = match (category, subcategory) {
-            // category root, return [All Albums] and subcategories
+            // category root, return [Default Category] and subcategories
             (Some(category), None) => {
                 albums.push(Album {
                     id: format!("/{}/", category.info().name()),
                     parent: query.id.to_string(),
-                    title: "All Albums".to_string(),
+                    title: "Default".to_string(),
                     artist: "".to_string(),
                     is_dir: true,
                     cover_art: "".to_string(),
