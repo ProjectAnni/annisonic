@@ -163,9 +163,12 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
                     (subcategory.name().to_string(), Box::new(subcategory.albums()))
                 };
 
+                let albums_available = data.backend.albums();
                 for catalog in catalogs {
                     for album in data.repo.load_albums(catalog) {
-                        albums.push(Album::from_album(album, query.id.to_string()));
+                        if albums_available.contains(album.catalog()) {
+                            albums.push(Album::from_album(album, query.id.to_string()));
+                        }
                     }
                 }
                 name
