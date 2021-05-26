@@ -231,7 +231,7 @@ dependencies = [
 [[package]]
 name = "anni-backend"
 version = "0.1.0"
-source = "git+https://github.com/project-anni/anni#1b889d4faea53dfba140cefdc9db3316ea124a01"
+source = "git+https://github.com/project-anni/anni#fd00b60373ab3edf2f097b0e5550f1881b9c1184"
 dependencies = [
  "anni-repo",
  "async-trait",
@@ -252,7 +252,7 @@ dependencies = [
 [[package]]
 name = "anni-common"
 version = "0.1.0"
-source = "git+https://github.com/project-anni/anni#1b889d4faea53dfba140cefdc9db3316ea124a01"
+source = "git+https://github.com/project-anni/anni#fd00b60373ab3edf2f097b0e5550f1881b9c1184"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -267,7 +267,7 @@ dependencies = [
 [[package]]
 name = "anni-derive"
 version = "0.1.0"
-source = "git+https://github.com/project-anni/anni#1b889d4faea53dfba140cefdc9db3316ea124a01"
+source = "git+https://github.com/project-anni/anni#fd00b60373ab3edf2f097b0e5550f1881b9c1184"
 dependencies = [
  "quote",
  "syn",
@@ -276,7 +276,7 @@ dependencies = [
 [[package]]
 name = "anni-repo"
 version = "0.1.0"
-source = "git+https://github.com/project-anni/anni#1b889d4faea53dfba140cefdc9db3316ea124a01"
+source = "git+https://github.com/project-anni/anni#fd00b60373ab3edf2f097b0e5550f1881b9c1184"
 dependencies = [
  "anni-common",
  "anni-derive",
@@ -500,9 +500,9 @@ checksum = "ea221b5284a47e40033bf9b66f35f984ec0ea2931eb03505246cd27a963f981b"
 
 [[package]]
 name = "cpufeatures"
-version = "0.1.1"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dec1028182c380cc45a2e2c5ec841134f2dfd0f8f5f0a5bcd68004f81b5efdf4"
+checksum = "ed00c67cb5d0a7d64a44f6ad2668db7e7530311dd53ea79bcd4fb022c64911c8"
 dependencies = [
  "libc",
 ]
@@ -824,9 +824,9 @@ checksum = "4a1ce40d6fc9764887c2fdc7305c3dcc429ba11ff981c1509416afd5697e4437"
 
 [[package]]
 name = "httpdate"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05842d0d43232b23ccb7060ecb0f0626922c21f30012e97b767b30afd4a5d4b9"
+checksum = "6456b8a6c8f33fee7d958fcd1b60d55b11940a79e63ae87013e6d22e26034440"
 
 [[package]]
 name = "humantime"
@@ -1651,18 +1651,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.24"
+version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0f4a65597094d4483ddaed134f409b2cb7c1beccf25201a9f73c719254fa98e"
+checksum = "fa6f76457f59514c7eeb4e59d891395fab0b2fd1d40723ae737d64153392e9c6"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.24"
+version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7765189610d8241a44529806d6fd1f2e0a08734313a35d5b3a556f92b381f3c0"
+checksum = "8a36768c0fbf1bb15eca10defa29526bda730a2376c2ab4393ccfa16fb1a318d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1754,9 +1754,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "caf7b11a536f46a809a8a9f0bb4237020f70ecbf115b842360afb127ea2fda57"
+checksum = "c49e3df43841dafb86046472506755d8501c5615673955f6aa17181125d13c37"
 dependencies = [
  "proc-macro2",
  "quote",

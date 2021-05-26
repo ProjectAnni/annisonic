@@ -21,4 +21,4 @@ hex = "0.4.3"
 rand = "0.8.3"
 
 anni-backend = { git = "https://github.com/project-anni/anni" }
-anni-repo = { git = "https://github.com/project-anni/anni" }
+anni-repo = { git = "https://github.com/project-anni/anni", features = ["arc"] }

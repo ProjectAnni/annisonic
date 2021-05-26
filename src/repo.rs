@@ -1,7 +1,6 @@
 use anni_repo::{Album, RepositoryManager};
 use std::collections::HashMap;
 use std::path::Path;
-use std::fs::read_dir;
 
 pub struct RepoManager {
     manager: RepositoryManager,
@@ -15,8 +14,7 @@ impl RepoManager {
         let mut albums = HashMap::new();
         let mut discs = HashMap::new();
 
-        for entry in read_dir(manager.album_root()).unwrap() {
-            let catalog = entry.unwrap().file_name().into_string().unwrap().replace(".toml", "");
+        for catalog in manager.catalogs().unwrap() {
             let album = manager.load_album(&catalog).unwrap();
             if album.discs().len() == 1 {
                 albums.insert(album.catalog().to_owned(), album);
