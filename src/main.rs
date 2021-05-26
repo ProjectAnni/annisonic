@@ -132,24 +132,41 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
         let name = match (category, subcategory) {
             // category root, return [Default Category] and subcategories
             (Some(category), None) => {
-                albums.push(Album {
-                    id: format!("/{}/", category.info().name()),
-                    parent: query.id.to_string(),
-                    title: "Default".to_string(),
-                    artist: "".to_string(),
-                    is_dir: true,
-                    cover_art: "".to_string(),
-                });
+                if category.subcategories().next().is_none() {
+                    // does not have subcategory
+                    let albums_available = data.backend.albums();
+                    for catalog in category.info().albums() {
+                        // return albums in default category directly
+                        for album in data.repo.load_albums(catalog) {
+                            if albums_available.contains(album.catalog()) {
+                                albums.push(Album::from_album(album, query.id.to_string()));
+                            }
+                        }
+                    }
+                } else {
+                    // subcategory exists
+                    if category.info().albums().next().is_some() {
+                        // show Default category if not empty
+                        albums.push(Album {
+                            id: format!("/{}/", category.info().name()),
+                            parent: query.id.to_string(),
+                            title: "Default".to_string(),
+                            artist: "".to_string(),
+                            is_dir: true,
+                            cover_art: "".to_string(),
+                        });
+                    }
 
-                for (i, subcategory) in category.subcategories().enumerate() {
-                    albums.push(Album {
-                        id: format!("/{}/{}", category.info().name(), i),
-                        parent: query.id.to_string(),
-                        title: subcategory.name().to_string(),
-                        artist: "".to_string(),
-                        is_dir: true,
-                        cover_art: "".to_string(),
-                    });
+                    for (i, subcategory) in category.subcategories().enumerate() {
+                        albums.push(Album {
+                            id: format!("/{}/{}", category.info().name(), i),
+                            parent: query.id.to_string(),
+                            title: subcategory.name().to_string(),
+                            artist: "".to_string(),
+                            is_dir: true,
+                            cover_art: "".to_string(),
+                        });
+                    }
                 }
                 category.info().name().to_string()
             }
