@@ -1,12 +1,12 @@
-use serde::{Serialize, Deserialize};
+use serde::Deserialize;
 use std::path::Path;
 use std::fs;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Config {
     pub server: ServerConfig,
     pub repo: RepoConfig,
-    pub backend: BackendConfig,
+    pub annil: AnnilConfig,
 }
 
 impl Config {
@@ -17,17 +17,11 @@ impl Config {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct ServerConfig {
     listen: Option<String>,
-    #[serde(default = "anni")]
     pub username: String,
-    #[serde(default = "anni")]
     pub password: String,
-}
-
-fn anni() -> String {
-    "anni".to_string()
 }
 
 impl ServerConfig {
@@ -40,29 +34,34 @@ impl ServerConfig {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct RepoConfig {
-    #[serde(rename = "type")]
-    repo_type: String,
     pub root: String,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct BackendConfig {
-    #[serde(rename = "type")]
-    pub backend_type: String,
-
-    root: Option<String>,
-    #[serde(default)]
-    pub strict: bool,
+#[derive(Deserialize, Clone)]
+pub struct AnnilConfig {
+    server: String,
+    token: String,
 }
 
-impl BackendConfig {
-    pub fn root(&self) -> &str {
-        if let Some(root) = &self.root {
-            root.as_str()
+impl AnnilConfig {
+    // removing padding '/'
+    fn server(&self) -> &str {
+        if self.server.ends_with("/") {
+            &self.server[0..self.server.len() - 1]
         } else {
-            panic!("no root provided!")
+            self.server.as_str()
         }
     }
+
+    pub async fn albums(&self) -> anyhow::Result<Vec<String>> {
+        let r = reqwest::get(format!("{}/albums?auth={}", self.server(), self.token)).await?;
+        Ok(r.json().await?)
+    }
+
+    pub fn get_url(&self, middle: &str) -> String {
+        format!("{}/{}?auth={}", self.server(), middle, self.token)
+    }
 }
+

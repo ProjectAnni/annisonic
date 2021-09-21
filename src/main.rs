@@ -1,21 +1,15 @@
 mod response;
 mod auth;
 mod models;
-mod backend;
 mod config;
 mod repo;
 
 use actix_web::{HttpServer, Responder, HttpResponse, get, App, web, http};
 use actix_web::middleware::{Logger, ErrorHandlers};
 use crate::auth::SonicAuth;
-use anni_backend::AnniBackend;
-use anni_backend::backends::FileBackend;
-use crate::backend::SonicBackend;
-use crate::config::Config;
-use std::path::PathBuf;
+use crate::config::{Config, AnnilConfig};
 use crate::models::*;
 use actix_web::web::Query;
-use tokio_util::io::ReaderStream;
 use crate::repo::RepoManager;
 use std::str::FromStr;
 use std::time::UNIX_EPOCH;
@@ -40,7 +34,7 @@ async fn get_album_list(query: Query<SizeOffset>, data: web::Data<AppState>) -> 
     let mut albums = AlbumList::new();
     let backend = &data.backend;
     let repo = &data.repo;
-    for catalog in backend.albums().iter().skip(query.offset) {
+    for catalog in backend.albums().await.expect("Failed to get album list").iter().skip(query.offset) {
         match repo.load_album(catalog) {
             Some(album) => albums.push(Album::from_album(album, "@".to_string())),
             None => {}
@@ -61,29 +55,17 @@ async fn stream(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
         log::error!("Invalid stream id: {}", query.id);
         HttpResponse::InternalServerError().finish()
     } else {
-        let catalog = parts[0];
-        let track_id = u8::from_str(parts[1]).unwrap();
-        let audio = data.backend.inner().as_backend().get_audio(catalog, track_id).await.unwrap();
-        HttpResponse::Ok()
-            .content_type(format!("audio/{}", audio.extension))
-            .insert_header(("Content-Length", audio.size))
-            .streaming(ReaderStream::new(audio.reader))
+        HttpResponse::Found()
+            .append_header(("Location", data.backend.get_url(query.id.as_str())))
+            .finish()
     }
 }
 
 #[get("/getCoverArt.view")]
 async fn get_cover_art(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
-    match data.backend.inner().as_backend().get_cover(&query.id).await {
-        Ok(cover) => {
-            HttpResponse::Ok()
-                .content_type("image/jpeg")
-                .streaming(ReaderStream::new(cover))
-        }
-        Err(err) => {
-            log::error!("getCoverArt {}: {:?}", query.id, err);
-            HttpResponse::InternalServerError().finish()
-        }
-    }
+    HttpResponse::Found()
+        .append_header(("Location", data.backend.get_url(query.id.as_str())))
+        .finish()
 }
 
 #[get("/getMusicFolders.view")]
@@ -134,11 +116,11 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
             (Some(category), None) => {
                 if category.subcategories().next().is_none() {
                     // does not have subcategory
-                    let albums_available = data.backend.albums();
+                    let albums_available = data.backend.albums().await.expect("Failed to get albums");
                     for catalog in category.info().albums() {
                         // return albums in default category directly
                         for album in data.repo.load_albums(catalog) {
-                            if albums_available.contains(album.catalog()) {
+                            if albums_available.iter().any(|x| x == album.catalog()) {
                                 albums.push(Album::from_album(album, query.id.to_string()));
                             }
                         }
@@ -180,10 +162,10 @@ async fn get_music_directory(query: Query<Id>, data: web::Data<AppState>) -> imp
                     (subcategory.name().to_string(), Box::new(subcategory.albums()))
                 };
 
-                let albums_available = data.backend.albums();
+                let albums_available = data.backend.albums().await.expect("Failed to load albums");
                 for catalog in catalogs {
                     for album in data.repo.load_albums(catalog) {
-                        if albums_available.contains(album.catalog()) {
+                        if albums_available.iter().any(|x| x == album.catalog()) {
                             albums.push(Album::from_album(album, query.id.to_string()));
                         }
                     }
@@ -239,10 +221,10 @@ async fn get_random_songs(query: Query<RandomSongsQuery>, data: web::Data<AppSta
     let mut rng = rand::thread_rng();
     let mut songs = Vec::new();
     let mut tries = 0;
-    let albums = data.backend.albums();
+    let albums = data.backend.albums().await.expect("Failed to get albums list");
     while songs.len() < query.size && tries < 5 * query.size {
         tries += 1;
-        let pos = rng.gen_range(0..data.backend.albums().len());
+        let pos = rng.gen_range(0..albums.len());
         match albums.iter().nth(pos) {
             Some(catalog) => {
                 match data.repo.load_album(catalog) {
@@ -301,8 +283,8 @@ async fn get_playlists() -> impl Responder {
 }
 
 struct AppState {
-    backend: SonicBackend,
     repo: RepoManager,
+    backend: AnnilConfig,
 }
 
 async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
@@ -310,15 +292,9 @@ async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
     std::env::set_var("ANNI_PASSWD", &config.server.password);
     std::env::set_var("ANNI_PASSWD_HEX", hex::encode(&config.server.password));
 
-    log::info!("Start initializing backends...");
-    let now = std::time::SystemTime::now();
-    let backend = if config.backend.backend_type == "file" {
-        let inner = FileBackend::new(PathBuf::from(config.backend.root()), config.backend.strict);
-        SonicBackend::new(AnniBackend::File(inner)).await?
-    } else {
-        unimplemented!();
-    };
-    log::info!("Backend initialization finished, used {:?}", now.elapsed().unwrap());
+    log::info!("Start validating annil server...");
+    let albums = config.annil.albums().await?;
+    log::info!("Annil server validated, found {} albums", albums.len());
 
     log::info!("Start initializing metadata repository...");
     let now = std::time::SystemTime::now();
@@ -326,8 +302,8 @@ async fn init_state(config: &Config) -> anyhow::Result<web::Data<AppState>> {
     log::info!("Metadata repository initialization finished, used {:?}", now.elapsed().unwrap());
 
     Ok(web::Data::new(AppState {
-        backend,
         repo,
+        backend: config.annil.clone(),
     }))
 }
 

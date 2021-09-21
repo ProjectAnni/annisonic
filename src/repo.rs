@@ -4,7 +4,6 @@ use std::path::Path;
 use anni_repo::category::Category;
 
 pub struct RepoManager {
-    manager: RepositoryManager,
     albums: HashMap<String, Album>,
     discs: HashMap<String, Album>,
     /// one album catalog -> multi disc catalog map
@@ -47,7 +46,7 @@ impl RepoManager {
             let category = manager.load_category(&category).unwrap();
             categories.insert(category.info().name().to_string(), category);
         }
-        Self { manager, albums, discs, multi_map, categories }
+        Self { albums, discs, multi_map, categories }
     }
 
     pub fn load_album(&self, catalog: &str) -> Option<&Album> {
