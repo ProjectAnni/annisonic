@@ -26,13 +26,12 @@ struct Auth {
 
 pub struct SonicAuth;
 
-impl<S, B> Transform<S, ServiceRequest> for SonicAuth
+impl<S> Transform<S, ServiceRequest> for SonicAuth
     where
-        S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=Error>,
+        S: Service<ServiceRequest, Response=ServiceResponse, Error=Error>,
         S::Future: 'static,
-        B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse;
     type Error = Error;
     type Transform = SonicAuthMiddleware<S>;
     type InitError = ();
@@ -47,13 +46,12 @@ pub struct SonicAuthMiddleware<S> {
     service: S,
 }
 
-impl<S, B> Service<ServiceRequest> for SonicAuthMiddleware<S>
+impl<S> Service<ServiceRequest> for SonicAuthMiddleware<S>
     where
-        S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=Error>,
+        S: Service<ServiceRequest, Response=ServiceResponse, Error=Error>,
         S::Future: 'static,
-        B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse;
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output=Result<Self::Response, Self::Error>>>>;
 
