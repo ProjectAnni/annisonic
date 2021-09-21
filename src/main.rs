@@ -64,7 +64,7 @@ async fn stream(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
 #[get("/getCoverArt.view")]
 async fn get_cover_art(query: Query<Id>, data: web::Data<AppState>) -> impl Responder {
     HttpResponse::Found()
-        .append_header(("Location", data.backend.get_url(query.id.as_str())))
+        .append_header(("Location", data.backend.get_url(&format!("{}/cover", query.id))))
         .finish()
 }
 
